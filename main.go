@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func mainHandler(c echo.Context) error {
@@ -55,10 +56,22 @@ func addUser(c echo.Context) error {
 	return c.String(200, "Başarılı")
 }
 
+func mainAdmin(c echo.Context) error {
+	return c.String(http.StatusOK, "Admin endpointindesin!")
+}
+
 func main() {
 	fmt.Printf("Hello World")
 
 	e := echo.New()
+
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "method=${method}, uri=${uri}, status=${status}",
+	}))
+
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "statusCode=${status}\n",
+	}))
 
 	e.GET("/main", mainHandler)
 
@@ -66,5 +79,10 @@ func main() {
 
 	e.POST("/user", addUser)
 
-	e.Start(":8088")
+	//adminGroup := e.Group("/admin", middleware.Logger())
+	adminGroup := e.Group("/admin")
+	// /admin/help
+	adminGroup.GET("/main", mainAdmin)
+
+	e.Start(":8080")
 }
