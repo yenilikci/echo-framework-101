@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -102,6 +103,12 @@ func checkCookie(next echo.HandlerFunc) echo.HandlerFunc {
 			return next(c)
 		}
 		return c.String(http.StatusUnauthorized, "Doğru cookie gönderilmedi!")
+	}
+}
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		fmt.Printf("no .env file found")
 	}
 }
 
