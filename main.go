@@ -11,6 +11,7 @@ import (
 )
 
 func mainHandler(c echo.Context) error {
+	fmt.Println("mainHandler çağrıldı")
 	return c.String(http.StatusOK, "Main endpointe get isteği yapıldı.")
 }
 
@@ -60,10 +61,21 @@ func mainAdmin(c echo.Context) error {
 	return c.String(http.StatusOK, "Admin endpointindesin!")
 }
 
+func setHeader(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		contentType := c.Request().Header.Get("Content-Type")
+		if contentType != "application/json" {
+			return c.String(http.StatusBadRequest, "Yalnızca application/json tipinde istek atılabilir!")
+		}
+		return next(c)
+	}
+}
+
 func main() {
 	fmt.Printf("Hello World")
 
 	e := echo.New()
+	e.Use(setHeader)
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}",
