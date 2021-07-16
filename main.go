@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -61,6 +63,22 @@ func mainAdmin(c echo.Context) error {
 	return c.String(http.StatusOK, "Admin endpointindesin!")
 }
 
+func loginAdmin(c echo.Context) error {
+	username := c.QueryParam("username")
+	password := c.QueryParam("password")
+	if username == "admin" && password == "123" {
+		cookie := http.Cookie{
+			Name:    "userId",
+			Value:   "user_id",
+			Expires: time.Now().Add(48 * time.Hour),
+		}
+		c.SetCookie(&cookie)
+		return c.String(http.StatusOK, "login olundu!")
+	}
+	return c.String(http.StatusUnauthorized, "kullanıcı adı veya şifre hatalı!")
+
+}
+
 func setHeader(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		contentType := c.Request().Header.Get("Content-Type")
@@ -71,11 +89,27 @@ func setHeader(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func checkCookie(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		cookie, err := c.Cookie("userId")
+		if err != nil {
+			if strings.Contains(err.Error(), "named cookie not present") {
+				return c.String(http.StatusUnauthorized, "Herhangi bir cookie gönderilemedi!")
+			}
+			return err
+		}
+		if cookie.Value == "user_id" {
+			return next(c)
+		}
+		return c.String(http.StatusUnauthorized, "Doğru cookie gönderilmedi!")
+	}
+}
+
 func main() {
 	fmt.Printf("Hello World")
 
 	e := echo.New()
-	e.Use(setHeader)
+	//e.Use(setHeader)
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}",
@@ -94,7 +128,9 @@ func main() {
 	//adminGroup := e.Group("/admin", middleware.Logger())
 	adminGroup := e.Group("/admin")
 	// /admin/help
-	adminGroup.GET("/main", mainAdmin)
+	adminGroup.GET("/main", mainAdmin, checkCookie) //+ middleware ile kontrol
+
+	adminGroup.GET("/login", loginAdmin)
 
 	e.Start(":8080")
 }
